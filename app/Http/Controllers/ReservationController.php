@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CalendarInterval;
 use App\Models\Reservation;
 use App\Models\Venue;
+use App\Models\VenueTimePrice;
 use App\Services\ReservationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -58,7 +59,7 @@ class ReservationController extends Controller
     /**
      * POST /reservations
      */
-    public function store(Request $request, ReservationService $service)
+    public function store(Request $request)
     {
         $request->validate([
             'venue_id' => 'required|exists:venues,id',
@@ -120,12 +121,12 @@ class ReservationController extends Controller
     public function reserveSlot(Request $request)
     {
         $request->validate([
-            'calendar_interval_id' => 'required|exists:calendar_intervals,id',
+            'calendar_interval_id' => 'required',
             'user_id' => 'required|exists:users,id',
             'additionals' => 'nullable|array',
         ]);
 
-        $interval = CalendarInterval::findOrFail($request->calendar_interval_id);
+        $interval = VenueTimePrice::findOrFail($request->calendar_interval_id);
 
         $additionalsPrice = collect($request->additionals ?? [])->sum('price');
         $totalPrice = $interval->price + $additionalsPrice;
@@ -141,7 +142,7 @@ class ReservationController extends Controller
 
         $reservation = Reservation::create([
             'user_id' => $request->user_id,
-            'venue_id' => $interval->calendar->venue_id,
+            'venue_id' => $interval->venue_id,
             'calendar_interval_id' => $interval->id,
             'start_at' => $interval->calendar->date . ' ' . $interval->start_time,
             'end_at' => $interval->calendar->date . ' ' . $interval->end_time,

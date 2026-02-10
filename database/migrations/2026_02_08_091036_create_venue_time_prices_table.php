@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('calendars', function (Blueprint $table) {
+        Schema::create('venue_time_prices', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('venue_id');
-            $table->string('name');
-            $table->date('date');
+            $table->bigInteger('venue_id')->unsigned();
+            $table->bigInteger('calendar_id')->unsigned();
+            $table->string('start_time');
+            $table->string('end_time');
+            $table->string('price', 100);
             $table->timestamps();
         });
     }
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('calendars');
+        Schema::dropIfExists('venue_time_prices');
     }
 };

@@ -19,12 +19,24 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            return response()->json(['message' => 'رمز عبور یا ایمیل کاربری اشتباه وارد شده'], 400);
         }
 
         return response()->json([
             'token' => $user->createToken('api')->plainTextToken
         ]);
+    }
+
+    public function profile()
+    {
+        return response()->json([
+            'user' => auth()->user()
+        ]);
+    }
+
+    public function logout()
+    {
+        auth()->logout();
     }
 
     public function register(Request $request)

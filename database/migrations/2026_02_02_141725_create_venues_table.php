@@ -16,9 +16,13 @@ return new class extends Migration
             $table->bigInteger('owner_id');
             $table->string('name');
             $table->enum('type', ['gym', 'tennis', 'football', 'basketball', 'futsal']);
+            $table->text('description')->nullable();
+            $table->string('address')->nullable();
+            $table->integer('capacity')->nullable();
             $table->enum('billing_type', ['hourly', 'monthly']);
+            $table->boolean('is_active');
             $table->decimal('price', 10, 2);
-            $table->json('additionals')->nullable(); // lights, equipment, coach, etc.
+            $table->json('additionals')->nullable();
             $table->timestamps();
         });
     }

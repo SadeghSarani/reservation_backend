@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Abbasudo\Purity\Traits\Filterable;
 use Illuminate\Database\Eloquent\Model;
 
 class Venue extends Model
 {
+    use Filterable;
     protected $fillable = [
         'owner_id',
         'name',
@@ -27,6 +29,23 @@ class Venue extends Model
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    public function venuePrice()
+    {
+        return $this->hasMany(VenueTimePrice::class);
+    }
+
+    public function images()
+    {
+        return $this->hasManyThrough(
+            File::class,
+            VenueImage::class,
+            'venue_id',
+            'id',
+            'id',
+            'file_id'
+        )->select('files.id', 'files.uuid');
     }
 }
 

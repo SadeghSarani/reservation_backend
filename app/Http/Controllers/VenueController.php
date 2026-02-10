@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Venue;
+use App\Models\VenueImage;
+use App\Services\FileService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class VenueController extends Controller
 {
@@ -18,18 +21,55 @@ class VenueController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->isSuperAdmin()) {
-            return Venue::with('owner')->paginate(10);
+        if (isset($user)) {
+            if ($user->isSuperAdmin()) {
+                return Venue::with('owner')->paginate(10);
+            }
+
+            if ($user->isVenueAdmin()) {
+                return Venue::where('owner_id', $user->id)
+                    ->with('owner')
+                    ->paginate(10);
+            }
         }
 
-        if ($user->isVenueAdmin()) {
-            return Venue::where('owner_id', $user->id)
-                ->with('owner')
-                ->paginate(10);
+        return response()->json([
+            'message' => 'venues',
+            'data' => Venue::filter()->paginate(10)
+        ]);
+    }
+
+
+    public function dashboard()
+    {
+        $data = Venue::select('type', DB::raw('count(*) as total'))
+            ->groupBy('type')
+            ->get();
+
+        return response()->json([
+           'data' => $data,
+           'message' => 'venues',
+        ]);
+    }
+
+    public function uploadsPhoto(Request $request, Venue $venue)
+    {
+        foreach ($request->photo as $file) {
+
+            $fileService = FileService::getInstance();
+            $fileId = $fileService->saveFile(rand(10000, 99999), $file);
+
+            VenueImage::create([
+               'venue_id' => $venue->id,
+               'file_id' => $fileId,
+            ]);
+
         }
 
-        // Normal users
-        return Venue::paginate(10);
+        return response()->json([
+            'success' => true,
+            'message' => 'Files uploaded successfully.',
+        ]);
     }
 
     /**
@@ -37,7 +77,7 @@ class VenueController extends Controller
      */
     public function show(Venue $venue)
     {
-        return $venue->load('owner');
+        return $venue->load('owner', 'venuePrice', 'images');
     }
 
     /**
@@ -58,7 +98,7 @@ class VenueController extends Controller
             'type' => $request->type,
             'billing_type' => $request->billing_type,
             'price' => $request->price,
-            'additionals' => $request->additionals,
+            'additionals' => $request->additionals ?? '',
         ]);
 
         return response()->json($venue, 201);
