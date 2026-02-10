@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('calendar_intervals', function (Blueprint $table) {
+        Schema::create('files', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('calendar_id');
-            $table->time('start_time');
-            $table->time('end_time');
-            $table->decimal('price', 10, 2);
-            $table->decimal('slot_duration', 5, 2)->default(1.5); // in hours
+            $table->uuid()->default(DB::raw('(UUID())'));
+            $table->string('name');
+            $table->string('file_path');
+            $table->string( 'type');
             $table->timestamps();
         });
     }
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('calendar_intervals');
+        Schema::dropIfExists('files');
     }
 };
