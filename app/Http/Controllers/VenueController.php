@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Calendar;
 use App\Models\Venue;
 use App\Models\VenueImage;
+use App\Models\VenueTimePrice;
 use App\Services\FileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +40,76 @@ class VenueController extends Controller
             'data' => Venue::filter()->paginate(10)
         ]);
     }
+
+
+    public function getTime(Request $request, Venue $venue)
+    {
+        $data = VenueTimePrice::query()
+            ->where('calendar_id', $request->get('calendar_id'))
+            ->where('venue_id', $venue->id)
+            ->get();
+
+        return response()->json([
+            'data' => $data,
+            'message' => 'time',
+        ]);
+    }
+
+    public function getAdminVenues(Request $request)
+    {
+        $user = auth()->user();
+
+        if (isset($user)) {
+            if ($user->isSuperAdmin()) {
+                return Venue::with('owner')->paginate(10);
+            }
+
+            if ($user->isVenueAdmin()) {
+                return Venue::where('owner_id', $user->id)
+                    ->with('owner')
+                    ->paginate(10);
+            }
+        }
+
+        return response()->json([
+            'message' => 'venues',
+            'data' => Venue::filter()->paginate(10)
+        ]);
+    }
+    public function getAdminVenue(Request $request, Venue $venue)
+    {
+        $user = auth()->user();
+
+        $can =  Venue::where('id', $venue->id)->where('owner_id', $user->id)->first();
+
+        if ($can == null) {
+            return response()->json([
+               'message' => 'not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'venues',
+            'data' => $venue->load(['owner', 'images', 'venuePrice'])
+        ]);
+    }
+
+
+    public function getCalendars(Request $request, Venue $venue)
+    {
+
+        $data = VenueTimePrice::query()
+            ->where('venue_id', $venue->id)
+            ->pluck('calendar_id')
+            ->unique()
+            ->toArray();
+
+        return response()->json([
+           'message' => 'calendar',
+           'data' => Calendar::query()->whereIn('id', $data)->get()
+        ]);
+    }
+
 
 
     public function dashboard()
