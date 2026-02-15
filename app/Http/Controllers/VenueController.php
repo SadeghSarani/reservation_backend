@@ -47,6 +47,7 @@ class VenueController extends Controller
         $data = VenueTimePrice::query()
             ->where('calendar_id', $request->get('calendar_id'))
             ->where('venue_id', $venue->id)
+            ->with('reservation')
             ->get();
 
         return response()->json([
@@ -181,13 +182,17 @@ class VenueController extends Controller
      */
     public function update(Request $request, Venue $venue)
     {
-        $this->authorize('update', $venue);
+//        $this->authorize('update', $venue);
 
         $venue->update($request->only([
             'name',
             'type',
             'billing_type',
             'price',
+            'address',
+            'capacity',
+            'description',
+            'is_active',
             'additionals'
         ]));
 

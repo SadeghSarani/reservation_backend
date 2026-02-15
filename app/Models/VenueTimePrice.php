@@ -13,4 +13,9 @@ class VenueTimePrice extends Model
     {
         return $this->belongsTo(Calendar::class);
     }
+
+    public function reservation()
+    {
+        return $this->hasOne(Reservation::class, 'calendar_interval_id', 'id');
+    }
 }

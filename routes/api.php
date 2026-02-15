@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\VenueController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\VenueIntervalController;
@@ -26,7 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/venues', [VenueController::class, 'store'])
         ->middleware('role:venue_admin,super_admin');
     Route::post('/venues/upload/{venue}', [VenueController::class, 'uploadsPhoto'])->middleware('role:venue_admin,super_admin');
-    Route::put('/venues/{venue}', [VenueController::class, 'update']);
+    Route::post('venues/admin/manage/update/{venue}', [VenueController::class, 'update']);
     Route::delete('/venues/{venue}', [VenueController::class, 'destroy']);
 
     Route::get('venues/time/{venue}', [VenueController::class, 'getTime']);
@@ -41,6 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reservations', [ReservationController::class, 'index']);
     Route::get('/reservations/{reservation}', [ReservationController::class, 'show']);
     Route::post('/reservations', [ReservationController::class, 'reserveSlot']);
+    Route::get('admin/dashboard', [UserController::class, 'dashboard']);
 
     Route::patch(
         '/reservations/{reservation}/status',

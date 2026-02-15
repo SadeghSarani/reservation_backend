@@ -14,6 +14,10 @@ class Venue extends Model
         'type',
         'billing_type',
         'price',
+        'address',
+        'capacity',
+        'description',
+        'is_active',
         'additionals'
     ];
 
