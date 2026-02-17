@@ -16,14 +16,19 @@ class FileService
      */
     public function saveFile($fileRand, $file, ?string $customPath = null): ?string
     {
+
         if (!$fileRand && !$customPath) {
             throw new \InvalidArgumentException('error save file');
         }
 
         $fileName = $this->generateFileName($file);
+        $filePath = $customPath ?? $this->getFilePath($fileRand, $fileName);
 
-        $filePath = ($customPath) ? $customPath.$fileName : $this->getFilePath($fileRand, $fileName);
-        $result = Storage::disk(env('FILESYSTEM_DISK'))->put($filePath, file_get_contents($file->getRealPath()));
+        Storage::disk(env('FILESYSTEM_DISK'))->putFileAs(
+            dirname($filePath),
+            $file,
+            basename($filePath)
+        );
 
         $File = File::create([
             'name' => $fileName,
