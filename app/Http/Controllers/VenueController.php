@@ -159,22 +159,85 @@ class VenueController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required',
-            'type' => 'required',
-            'billing_type' => 'required|in:hourly,monthly',
-            'price' => 'required|numeric',
+            'name' => 'required|string|max:255',
+            'type' => 'required|string',
+            'billing_type' => 'required|in:hourly,monthly,session',
+            'address' => 'required|string',
+            'capacity' => 'nullable|integer|min:0',
+            'price' => 'nullable|integer|min:0',
+            'is_active' => 'required|boolean',
+            'additionals' => 'nullable|array',
+            'time_schedules' => 'nullable|array',
         ]);
 
-        $venue = Venue::create([
-            'owner_id' => auth()->id(),
-            'name' => $request->name,
-            'type' => $request->type,
-            'billing_type' => $request->billing_type,
-            'price' => $request->price,
-            'additionals' => $request->additionals ?? '',
-        ]);
+        DB::beginTransaction();
 
-        return response()->json($venue, 201);
+        try {
+
+            $venue = Venue::create([
+                'owner_id'     => auth()->id(), // adjust if needed
+                'name'         => $request->name,
+                'description'  => $request->description,
+                'address'      => $request->address,
+                'capacity'     => $request->capacity ?? 0,
+                'price'        => $request->price ?? 0,
+                'type'         => $request->type,
+                'billing_type' => $request->billing_type,
+                'is_active'    => $request->is_active,
+                'additionals'  => $request->additionals ?? [],
+            ]);
+
+            if (
+                $request->billing_type === 'hourly' &&
+                !empty($request->time_schedules)
+            ) {
+
+                foreach ($request->time_schedules as $schedule) {
+
+                    $interval = (int) $schedule['interval_minutes'];
+
+                    foreach ($schedule['ranges'] as $range) {
+
+                        $start = \Carbon\Carbon::createFromFormat('H:i', $range['from']);
+                        $end   = \Carbon\Carbon::createFromFormat('H:i', $range['to']);
+
+                        if ($start->gte($end)) {
+                            continue; // skip invalid
+                        }
+
+                        while ($start->copy()->addMinutes($interval)->lte($end)) {
+
+                            $slotEnd = $start->copy()->addMinutes($interval);
+
+                            VenueTimePrice::create([
+                                'venue_id' => $venue->id,
+                                'from'     => $start->format('H:i:s'),
+                                'to'       => $slotEnd->format('H:i:s'),
+                                'price'    => $range['price'] ?? 0,
+                            ]);
+
+                            $start = $slotEnd;
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'data'    => $venue->load('venuePrice')
+            ]);
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

@@ -24,7 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/venues/manage/admin', [VenueController::class, 'getAdminVenues']);
     Route::get('/venues/manage/admin/{venue}', [VenueController::class, 'getAdminVenue']);
 //    Route::get('/venues/{venue}', [VenueController::class, 'show']);
-    Route::post('/venues', [VenueController::class, 'store'])
+    Route::post('admin/venues', [VenueController::class, 'store'])
         ->middleware('role:venue_admin,super_admin');
     Route::post('/venues/upload/{venue}', [VenueController::class, 'uploadsPhoto'])->middleware('role:venue_admin,super_admin');
     Route::post('venues/admin/manage/update/{venue}', [VenueController::class, 'update']);

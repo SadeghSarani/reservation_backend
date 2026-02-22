@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->bigInteger('owner_id');
             $table->string('name');
-            $table->enum('type', ['gym', 'tennis', 'football', 'basketball', 'futsal']);
+            $table->enum('type', ['gym', 'tennis', 'football', 'basketball', 'futsal', 'volleyball']);
             $table->text('description')->nullable();
             $table->string('address')->nullable();
             $table->integer('capacity')->nullable();
