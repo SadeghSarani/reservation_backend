@@ -111,6 +111,13 @@ class VenueController extends Controller
         ]);
     }
 
+    public function getCalendarsData()
+    {
+        return response()->json([
+           'message' => 'calendars',
+            'data'  => Calendar::all()
+        ]);
+    }
 
 
     public function dashboard()
@@ -159,15 +166,16 @@ class VenueController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'type' => 'required|string',
-            'billing_type' => 'required|in:hourly,monthly,session',
-            'address' => 'required|string',
-            'capacity' => 'nullable|integer|min:0',
-            'price' => 'nullable|integer|min:0',
-            'is_active' => 'required|boolean',
-            'additionals' => 'nullable|array',
-            'time_schedules' => 'nullable|array',
+            'name'          => 'required|string|max:255',
+            'type'          => 'required|string',
+            'billing_type'  => 'required|in:hourly,monthly,session',
+            'address'       => 'required|string',
+            'capacity'      => 'nullable|integer|min:0',
+            'price'         => 'nullable|integer|min:0',
+            'is_active'     => 'required|boolean',
+            'additionals'   => 'nullable|array',
+            'time_schedules'=> 'nullable|array',
+            'calendars_id'  => 'nullable|array'
         ]);
 
         DB::beginTransaction();
@@ -175,7 +183,7 @@ class VenueController extends Controller
         try {
 
             $venue = Venue::create([
-                'owner_id'     => auth()->id(), // adjust if needed
+                'owner_id'     => auth()->id(),
                 'name'         => $request->name,
                 'description'  => $request->description,
                 'address'      => $request->address,
@@ -192,6 +200,8 @@ class VenueController extends Controller
                 !empty($request->time_schedules)
             ) {
 
+                $calendarIds = $request->calendars_id ?? [null];
+
                 foreach ($request->time_schedules as $schedule) {
 
                     $interval = (int) $schedule['interval_minutes'];
@@ -202,19 +212,23 @@ class VenueController extends Controller
                         $end   = \Carbon\Carbon::createFromFormat('H:i', $range['to']);
 
                         if ($start->gte($end)) {
-                            continue; // skip invalid
+                            continue;
                         }
 
                         while ($start->copy()->addMinutes($interval)->lte($end)) {
 
                             $slotEnd = $start->copy()->addMinutes($interval);
 
-                            VenueTimePrice::create([
-                                'venue_id' => $venue->id,
-                                'from'     => $start->format('H:i:s'),
-                                'to'       => $slotEnd->format('H:i:s'),
-                                'price'    => $range['price'] ?? 0,
-                            ]);
+                            foreach ($calendarIds as $calendarId) {
+
+                                VenueTimePrice::create([
+                                    'venue_id'   => $venue->id,
+                                    'calendar_id' => $calendarId,
+                                    'start_time'       => $start->format('H:i:s'),
+                                    'end_time'         => $slotEnd->format('H:i:s'),
+                                    'price'      => $range['price'] ?? 0,
+                                ]);
+                            }
 
                             $start = $slotEnd;
                         }
@@ -239,7 +253,6 @@ class VenueController extends Controller
             ], 500);
         }
     }
-
     /**
      * PUT /venues/{venue}
      */

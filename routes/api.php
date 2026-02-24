@@ -18,7 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
-
+    Route::get('/user/dashboard', [UserController::class , 'userData']);
 
     // Venues
     Route::get('/venues/manage/admin', [VenueController::class, 'getAdminVenues']);
@@ -31,8 +31,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/venues/{venue}', [VenueController::class, 'destroy']);
 
     Route::get('venues/time/{venue}', [VenueController::class, 'getTime']);
-
     Route::get('/venues/calendars/{venue}', [VenueController::class, 'getCalendars']);
+    Route::get('calendar', [VenueController::class, 'getCalendarsData']);
 
     Route::post('/venues/price/{venue}', [VenueIntervalController::class, 'createIntervalTimeVenue'])
         ->middleware('role:venue_admin,super_admin');
