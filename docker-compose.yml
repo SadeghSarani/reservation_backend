@@ -1,0 +1,56 @@
+version: '3'
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "2000:80"
+    networks:
+      - reservation_venue
+    depends_on:
+      - mysql
+    volumes:
+      - ./:/var/www/html
+
+  mysql:
+    image: mysql:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=12345678
+      - MYSQL_DATABASE=reservation_venue
+    networks:
+      - reservation_venue
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+
+  reservation_venue_phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: "reservation_venue_panel_phpmyadmin1"
+    restart: always
+    ports:
+      - "2585:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 600M
+    networks:
+      - reservation_venue
+
+  web-queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - reservation_venue
+    depends_on:
+      - web
+      - mysql
+    volumes:
+      - ./:/var/www/html
+    command: ["php", "artisan", "queue:work"]
+    restart: always
+
+
+networks:
+  reservation_venue:
+    driver: bridge
