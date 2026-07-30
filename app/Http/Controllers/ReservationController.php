@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\CalendarInterval;
+use App\Domain\Payments\Services\ReservationPaymentService;
 use App\Models\Reservation;
 use App\Models\Venue;
-use App\Models\VenueTimePrice;
-use App\Services\ReservationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -101,58 +98,41 @@ class ReservationController extends Controller
         $user = auth()->user();
 
         if (
-            !$user->isSuperAdmin() &&
-            !($user->isVenueAdmin() && $reservation->venue->owner_id === $user->id)
+            ! $user->isSuperAdmin() &&
+            ! ($user->isVenueAdmin() && $reservation->venue->owner_id === $user->id)
         ) {
             abort(403);
         }
 
         $request->validate([
-            'status' => 'required|in:pending,confirmed,cancelled'
+            'status' => 'required|in:pending,confirmed,cancelled',
         ]);
 
         $reservation->update([
-            'status' => $request->status
+            'status' => $request->status,
         ]);
 
         return response()->json($reservation);
     }
 
-    public function reserveSlot(Request $request)
+    public function reserveSlot(Request $request, ReservationPaymentService $payments)
     {
         $request->validate([
-            'calendar_interval_id' => 'required',
-            'user_id' => 'required|exists:users,id',
+            'calendar_interval_id' => 'required|integer|exists:venue_time_prices,id',
             'additionals' => 'nullable|array',
+            'additionals.*.name' => 'required|string',
         ]);
 
-        $interval = VenueTimePrice::findOrFail($request->calendar_interval_id);
-
-        $additionalsPrice = collect($request->additionals ?? [])->sum('price');
-        $totalPrice = $interval->price + $additionalsPrice;
-
-        $exists = Reservation::where('calendar_interval_id', $interval->id)
-            ->where('start_at', $interval->calendar->date . ' ' . $interval->start_time)
-            ->where('end_at', $interval->calendar->date . ' ' . $interval->end_time)
-            ->exists();
-
-        if ($exists) {
-            return response()->json(['message' => 'Slot already reserved'], 409);
+        try {
+            $payment = $payments->initiate(auth()->id(), (int) $request->calendar_interval_id, $request->additionals ?? []);
+        } catch (\RuntimeException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 409);
         }
 
-        $reservation = Reservation::create([
-            'user_id' => $request->user_id,
-            'venue_id' => $interval->venue_id,
-            'calendar_interval_id' => $interval->id,
-            'start_at' => $interval->calendar->date . ' ' . $interval->start_time,
-            'end_at' => $interval->calendar->date . ' ' . $interval->end_time,
-            'total_price' => $totalPrice,
-            'status' => 'pending',
-            'additionals' => $request->additionals ?? []
-        ]);
-
-        return response()->json($reservation, 201);
+        return response()->json([
+            'invoice' => $payment['invoice']->number,
+            'amount' => $payment['invoice']->amount,
+            'payment_url' => $payment['payment_url'],
+        ], 201);
     }
-
 }
-

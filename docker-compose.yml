@@ -28,7 +28,7 @@ services:
     container_name: "reservation_venue_panel_phpmyadmin1"
     restart: always
     ports:
-      - "2585:80"
+      - "8852:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306

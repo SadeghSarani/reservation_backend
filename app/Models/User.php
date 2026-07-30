@@ -11,14 +11,14 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
-    protected $fillable =  ['name', 'email', 'password', 'role', 'phone'];
+    protected $fillable = ['name', 'email', 'password', 'role', 'phone'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -53,6 +53,31 @@ class User extends Authenticatable
         return $this->hasMany(Reservation::class);
     }
 
+    public function roleUpgradeRequests()
+    {
+        return $this->hasMany(RoleUpgradeRequest::class);
+    }
+
+    public function supportTickets()
+    {
+        return $this->hasMany(SupportTicket::class);
+    }
+
+    public function educationalClasses()
+    {
+        return $this->hasMany(EducationalClass::class, 'instructor_id');
+    }
+
+    public function classEnrollments()
+    {
+        return $this->hasMany(EducationalClassEnrollment::class);
+    }
+
+    public function withdrawalRequests()
+    {
+        return $this->hasMany(WithdrawalRequest::class);
+    }
+
     public function isSuperAdmin()
     {
         return $this->role === 'super_admin';
@@ -61,5 +86,10 @@ class User extends Authenticatable
     public function isVenueAdmin()
     {
         return $this->role === 'venue_admin';
+    }
+
+    public function isInstructor()
+    {
+        return $this->role === 'instructor';
     }
 }

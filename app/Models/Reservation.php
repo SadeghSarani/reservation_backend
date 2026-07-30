@@ -14,7 +14,7 @@ class Reservation extends Model
         'end_at',
         'total_price',
         'status',
-        'additionals'
+        'additionals',
     ];
 
     protected $casts = [
@@ -36,6 +36,6 @@ class Reservation extends Model
 
     public function interval()
     {
-        return $this->belongsTo(CalendarInterval::class, 'calendar_interval_id');
+        return $this->belongsTo(VenueTimePrice::class, 'calendar_interval_id');
     }
 }

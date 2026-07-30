@@ -8,10 +8,14 @@ class VenueTimePrice extends Model
 {
     protected $guarded = [];
 
-
     public function calendar()
     {
         return $this->belongsTo(Calendar::class);
+    }
+
+    public function venue()
+    {
+        return $this->belongsTo(Venue::class);
     }
 
     public function reservation()

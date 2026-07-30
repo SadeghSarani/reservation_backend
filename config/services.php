@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'boometo' => [
+        'url' => env('BOOMETO_URL'),
+        'token' => env('BOOMETO_TOKEN'),
+        'amount_multiplier' => env('BOOMETO_AMOUNT_MULTIPLIER', 10),
+        'invoice_ttl' => env('BOOMETO_INVOICE_TTL', 20),
+        'frontend_callback_url' => env(
+            'BOOMETO_FRONTEND_CALLBACK_URL',
+            rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/').'/payment/callback'
+        ),
+    ],
+
 ];

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Venue extends Model
 {
     use Filterable;
+
     protected $fillable = [
         'owner_id',
         'name',
@@ -18,7 +19,7 @@ class Venue extends Model
         'capacity',
         'description',
         'is_active',
-        'additionals'
+        'additionals',
     ];
 
     protected $casts = [
@@ -40,6 +41,11 @@ class Venue extends Model
         return $this->hasMany(VenueTimePrice::class);
     }
 
+    public function educationalClasses()
+    {
+        return $this->hasMany(EducationalClass::class);
+    }
+
     public function images()
     {
         return $this->hasManyThrough(
@@ -52,4 +58,3 @@ class Venue extends Model
         )->select('files.id', 'files.uuid');
     }
 }
-

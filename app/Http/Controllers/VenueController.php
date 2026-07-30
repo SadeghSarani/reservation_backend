@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Calendar;
 use App\Models\Venue;
 use App\Models\VenueImage;
@@ -37,10 +36,9 @@ class VenueController extends Controller
 
         return response()->json([
             'message' => 'venues',
-            'data' => Venue::filter()->paginate(10)
+            'data' => Venue::filter()->paginate(10),
         ]);
     }
-
 
     public function getTime(Request $request, Venue $venue)
     {
@@ -74,27 +72,25 @@ class VenueController extends Controller
 
         return response()->json([
             'message' => 'venues',
-            'data' => Venue::filter()->paginate(10)
+            'data' => Venue::filter()->paginate(10),
         ]);
     }
+
     public function getAdminVenue(Request $request, Venue $venue)
     {
         $user = auth()->user();
 
-        $can =  Venue::where('id', $venue->id)->where('owner_id', $user->id)->first();
-
-        if ($can == null) {
+        if (! $user->isSuperAdmin() && $venue->owner_id !== $user->id) {
             return response()->json([
-               'message' => 'not found',
+                'message' => 'not found',
             ], 404);
         }
 
         return response()->json([
             'message' => 'venues',
-            'data' => $venue->load(['owner', 'images', 'venuePrice'])
+            'data' => $venue->load(['owner', 'images', 'venuePrice']),
         ]);
     }
-
 
     public function getCalendars(Request $request, Venue $venue)
     {
@@ -106,19 +102,18 @@ class VenueController extends Controller
             ->toArray();
 
         return response()->json([
-           'message' => 'calendar',
-           'data' => Calendar::query()->whereIn('id', $data)->get()
+            'message' => 'calendar',
+            'data' => Calendar::query()->whereIn('id', $data)->get(),
         ]);
     }
 
     public function getCalendarsData()
     {
         return response()->json([
-           'message' => 'calendars',
-            'data'  => Calendar::all()
+            'message' => 'calendars',
+            'data' => Calendar::all(),
         ]);
     }
-
 
     public function dashboard()
     {
@@ -127,21 +122,23 @@ class VenueController extends Controller
             ->get();
 
         return response()->json([
-           'data' => $data,
-           'message' => 'venues',
+            'data' => $data,
+            'message' => 'venues',
         ]);
     }
 
     public function uploadsPhoto(Request $request, Venue $venue)
     {
+        $this->authorize('update', $venue);
+
         foreach ($request->photo as $file) {
 
             $fileService = FileService::getInstance();
             $fileId = $fileService->saveFile(rand(10000, 99999), $file);
 
             VenueImage::create([
-               'venue_id' => $venue->id,
-               'file_id' => $fileId,
+                'venue_id' => $venue->id,
+                'file_id' => $fileId,
             ]);
 
         }
@@ -166,16 +163,16 @@ class VenueController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'          => 'required|string|max:255',
-            'type'          => 'required|string',
-            'billing_type'  => 'required|in:hourly,monthly,session',
-            'address'       => 'required|string',
-            'capacity'      => 'nullable|integer|min:0',
-            'price'         => 'nullable|integer|min:0',
-            'is_active'     => 'required|boolean',
-            'additionals'   => 'nullable|array',
-            'time_schedules'=> 'nullable|array',
-            'calendars_id'  => 'nullable|array'
+            'name' => 'required|string|max:255',
+            'type' => 'required|string',
+            'billing_type' => 'required|in:hourly,monthly,session',
+            'address' => 'required|string',
+            'capacity' => 'nullable|integer|min:0',
+            'price' => 'nullable|integer|min:0',
+            'is_active' => 'required|boolean',
+            'additionals' => 'nullable|array',
+            'time_schedules' => 'nullable|array',
+            'calendars_id' => 'nullable|array',
         ]);
 
         DB::beginTransaction();
@@ -183,21 +180,21 @@ class VenueController extends Controller
         try {
 
             $venue = Venue::create([
-                'owner_id'     => auth()->id(),
-                'name'         => $request->name,
-                'description'  => $request->description,
-                'address'      => $request->address,
-                'capacity'     => $request->capacity ?? 0,
-                'price'        => $request->price ?? 0,
-                'type'         => $request->type,
+                'owner_id' => auth()->id(),
+                'name' => $request->name,
+                'description' => $request->description,
+                'address' => $request->address,
+                'capacity' => $request->capacity ?? 0,
+                'price' => $request->price ?? 0,
+                'type' => $request->type,
                 'billing_type' => $request->billing_type,
-                'is_active'    => $request->is_active,
-                'additionals'  => $request->additionals ?? [],
+                'is_active' => $request->is_active,
+                'additionals' => $request->additionals ?? [],
             ]);
 
             if (
                 $request->billing_type === 'hourly' &&
-                !empty($request->time_schedules)
+                ! empty($request->time_schedules)
             ) {
 
                 $calendarIds = $request->calendars_id ?? [null];
@@ -209,7 +206,7 @@ class VenueController extends Controller
                     foreach ($schedule['ranges'] as $range) {
 
                         $start = \Carbon\Carbon::createFromFormat('H:i', $range['from']);
-                        $end   = \Carbon\Carbon::createFromFormat('H:i', $range['to']);
+                        $end = \Carbon\Carbon::createFromFormat('H:i', $range['to']);
 
                         if ($start->gte($end)) {
                             continue;
@@ -222,11 +219,11 @@ class VenueController extends Controller
                             foreach ($calendarIds as $calendarId) {
 
                                 VenueTimePrice::create([
-                                    'venue_id'   => $venue->id,
+                                    'venue_id' => $venue->id,
                                     'calendar_id' => $calendarId,
-                                    'start_time'       => $start->format('H:i:s'),
-                                    'end_time'         => $slotEnd->format('H:i:s'),
-                                    'price'      => $range['price'] ?? 0,
+                                    'start_time' => $start->format('H:i:s'),
+                                    'end_time' => $slotEnd->format('H:i:s'),
+                                    'price' => $range['price'] ?? 0,
                                 ]);
                             }
 
@@ -240,7 +237,7 @@ class VenueController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data'    => $venue->load('venuePrice')
+                'data' => $venue->load('venuePrice'),
             ]);
 
         } catch (\Exception $e) {
@@ -249,16 +246,17 @@ class VenueController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
+
     /**
      * PUT /venues/{venue}
      */
     public function update(Request $request, Venue $venue)
     {
-//        $this->authorize('update', $venue);
+        $this->authorize('update', $venue);
 
         $venue->update($request->only([
             'name',
@@ -269,7 +267,7 @@ class VenueController extends Controller
             'capacity',
             'description',
             'is_active',
-            'additionals'
+            'additionals',
         ]));
 
         return response()->json($venue);

@@ -12,6 +12,8 @@ class VenueIntervalController extends Controller
 {
     public function createIntervalTimeVenue(Request $request, Venue $venue)
     {
+        $this->authorize('update', $venue);
+
         $this->createVenueTimePrices(
             $request->input('calendar_id', null),
             $venue->id,
@@ -20,8 +22,8 @@ class VenueIntervalController extends Controller
         );
 
         return response()->json([
-           'success' => true,
-           'message' => 'قیمت کذاری با موفقیت انجام شد'
+            'success' => true,
+            'message' => 'قیمت کذاری با موفقیت انجام شد',
         ]);
     }
 
@@ -30,14 +32,13 @@ class VenueIntervalController extends Controller
         int $venueId,
         array $priceRanges,
         int $intervalMinutes = 90 // 1h30m
-    ): void
-    {
+    ): void {
         DB::transaction(function () use ($calendarId, $venueId, $priceRanges, $intervalMinutes) {
 
             foreach ($priceRanges as $range) {
 
                 $start = Carbon::createFromFormat('H:i', $range['from']);
-                $end   = Carbon::createFromFormat('H:i', $range['to']);
+                $end = Carbon::createFromFormat('H:i', $range['to']);
 
                 while ($start->lt($end)) {
 
@@ -49,12 +50,12 @@ class VenueIntervalController extends Controller
 
                     VenueTimePrice::insert([
                         'calendar_id' => $calendarId,
-                        'venue_id'    => $venueId,
-                        'start_time'  => $start->format('H:i'),
-                        'end_time'    => $slotEnd->format('H:i'),
-                        'price'       => $range['price'],
-                        'created_at'  => now(),
-                        'updated_at'  => now(),
+                        'venue_id' => $venueId,
+                        'start_time' => $start->format('H:i'),
+                        'end_time' => $slotEnd->format('H:i'),
+                        'price' => $range['price'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ]);
 
                     $start = $slotEnd;
@@ -62,5 +63,4 @@ class VenueIntervalController extends Controller
             }
         });
     }
-
 }
