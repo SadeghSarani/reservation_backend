@@ -1,0 +1,17 @@
+<IfModule mod_rewrite.c>
+Options +FollowSymLinks
+RewriteEngine On
+
+# ریدایرکت از www به دامنه اصلی (بدون www)
+RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+RewriteRule ^(.*)$ https://%1/$1 [L,R=301]
+
+# مسیر‌دهی به public
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ /public/$1
+
+# صفحه اصلی
+RewriteRule ^(/)?$ public/index.php [L]
+</IfModule>
